@@ -68,6 +68,7 @@ class RNN(nn.Module):
 
         for xt in x.unbind(0):
             # update the hidden state
+            # time series in here!!!
             h = self.activation(self.W_hh(h) + self.W_xh(xt))
             h_seq.append(h)
 
@@ -99,10 +100,17 @@ class LSTM(nn.Module):
         # function as your linear layers.                                      #
         # Initialse h and c as 0 if these values are not given.                #
         ########################################################################
+        self.W_xf = nn.Linear(self.input_size, self.hidden_size, bias=True)
+        self.U_hf = nn.Linear(self.hidden_size, self.hidden_size, bias=True)
+        self.W_xi = nn.Linear(self.input_size, self.hidden_size, bias=True)
+        self.U_hi = nn.Linear(self.hidden_size, self.hidden_size, bias=True)
+        self.W_xo = nn.Linear(self.input_size, self.hidden_size, bias=True)
+        self.U_ho = nn.Linear(self.hidden_size, self.hidden_size, bias=True)
+        self.W_xc = nn.Linear(self.hidden_size, self.hidden_size, bias=True)
+        self.U_hc = nn.Linear(self.hidden_size, self.hidden_size, bias=True)
 
-
-        pass
-
+        self.activation_sig = nn.Sigmoid()
+        self.activation_tanh = nn.Tanh()
         ########################################################################
         #                           END OF YOUR CODE                           #
         ########################################################################
@@ -139,10 +147,21 @@ class LSTM(nn.Module):
         ########################################################################
         #  TODO: Perform the forward pass                                      #
         ########################################################################
+        for xt in x.unbind(0):
+            
+            f = self.activation_sig(self.W_xf(xt) + self.U_hf(h))
+            i = self.activation_sig(self.W_xi(xt) + self.U_hi(h))
+            o = self.activation_sig(self.W_xo(xt) + self.U_ho(h))
+            
+            c = f * c + i * self.activation_tanh(self.W_xc(xt) + self.U_hc(h))
+            h = o * self.activation_tanh(c)
+            
+            c_seq.append(c)
+            h_seq.append(h)
 
 
-        pass
-
+        h_seq = torch.cat(h_seq, 0)
+        c_seq = torch.cat(c_seq, 0)
         ########################################################################
         #                           END OF YOUR CODE                           #
         ########################################################################
@@ -199,6 +218,7 @@ class Embedding(nn.Module):
         # Ensure <eos> always return zeros
         # and padding gradient is always 0
         weight = self.weight * self.padding_mask
+        #weight = weight.type(torch.LongTensor)
 
         embeddings = None
 
@@ -206,10 +226,7 @@ class Embedding(nn.Module):
         # TODO: Select the indices in the inputs from the weight tensor        #
         # hint: It is very short                                               #
         ########################################################################
-
-
-        pass
-
+        embeddings = weight[inputs]
         ########################################################################
         #                           END OF YOUR CODE                           #
         ########################################################################
